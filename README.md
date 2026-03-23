@@ -1,7 +1,11 @@
 Ovaj projekat predstavlja inteligentni chatbot razvijen korišćenjem Azure servisa i RAG (Retrieval-Augmented Generation) pristupa.  
 Chatbot omogućava korisnicima da postavljaju pitanja nad skupom dokumenata (PDF fajlova), pri čemu koristi semantičku pretragu i generativni AI za davanje preciznih odgovora.
+Chat bot odgovara na pitanja o ITSM alatu, kreiraju tiketa, aktivaciji naloga, promena statusa tiketa, otkazivanje tiketa..
 
 ---
+## 🔗 Link ka aplikaciji
+
+https://chat-bot-web-geeafje7b2e4aehy.westeurope-01.azurewebsites.net/
 
 ##  Funkcionalnosti
 
