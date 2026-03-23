@@ -1,25 +1,21 @@
-# azure-chatbot
-
-# 🤖 Azure RAG Chatbot
-
 Ovaj projekat predstavlja inteligentni chatbot razvijen korišćenjem Azure servisa i RAG (Retrieval-Augmented Generation) pristupa.  
 Chatbot omogućava korisnicima da postavljaju pitanja nad skupom dokumenata (PDF fajlova), pri čemu koristi semantičku pretragu i generativni AI za davanje preciznih odgovora.
 
 ---
 
-## 🚀 Funkcionalnosti
+##  Funkcionalnosti
 
-- 💬 Chat interfejs za komunikaciju sa korisnikom
-- 🤖 Generisanje odgovora pomoću Azure OpenAI (GPT-4o-mini)
-- 🔎 Semantička pretraga koristeći Azure AI Search (vector search)
-- 📄 Automatska obrada PDF dokumenata (ekstrakcija i chunking)
-- 🧠 Embedding generisanje za vektorsku pretragu
-- ☁️ Deploy na Azure App Service
-- 📊 Logovanje putem Azure Application Insights
+-  Chat interfejs za komunikaciju sa korisnikom
+-  Generisanje odgovora pomoću Azure OpenAI (GPT-4o-mini)
+-  Semantička pretraga koristeći Azure AI Search (vector search)
+-  Automatska obrada PDF dokumenata (ekstrakcija i chunking)
+-  Embedding generisanje za vektorsku pretragu
+-  Deploy na Azure App Service
+-  Logovanje putem Azure Application Insights
 
 ---
 
-## 🧠 Kako sistem funkcioniše (RAG)
+##  Kako sistem funkcioniše (RAG)
 
 1. PDF dokumenti se učitavaju iz Azure Blob Storage
 2. Tekst se ekstraktuje i deli na manje segmente (chunking)
@@ -33,7 +29,7 @@ Chatbot omogućava korisnicima da postavljaju pitanja nad skupom dokumenata (PDF
 
 ---
 
-## 🏗️ Arhitektura
+##  Arhitektura
 
 - **Frontend:** Web chat (Direct Line API)
 - **Backend:** Python bot (Bot Framework)
@@ -45,7 +41,7 @@ Chatbot omogućava korisnicima da postavljaju pitanja nad skupom dokumenata (PDF
 
 ---
 
-## 🛠️ Tehnologije
+##  Tehnologije
 
 - Python
 - Azure Bot Framework
@@ -57,7 +53,7 @@ Chatbot omogućava korisnicima da postavljaju pitanja nad skupom dokumenata (PDF
 
 ---
 
-## ⚙️ Ključne komponente
+##  Ključne komponente
 
 ### 🔹 `app.py`
 - Pokreće web server (aiohttp)
@@ -86,7 +82,7 @@ Chatbot omogućava korisnicima da postavljaju pitanja nad skupom dokumenata (PDF
 
 ---
 
-## 💬 Chat interfejs
+##  Chat interfejs
 
 Aplikacija koristi jednostavan web interfejs baziran na Bot Framework Web Chat biblioteci.
 
@@ -96,7 +92,7 @@ Proces komunikacije:
 3. Web Chat se povezuje na bot koristeći token
 4. Korisnik komunicira sa chatbot-om u realnom vremenu
 
-## 🔐 Bezbednost
+## Bezbednost
 
 - Direct Line token se generiše dinamički na backend-u
 - API ključevi se čuvaju u environment varijablama
