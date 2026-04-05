@@ -1,0 +1,131 @@
+(function () {
+  const script = document.createElement("script");
+  script.src = "https://cdn.botframework.com/botframework-webchat/latest/webchat.js";
+  document.head.appendChild(script);
+
+  const button = document.createElement("button");
+  button.innerHTML = "💬";
+  button.style.position = "fixed";
+  button.style.bottom = "20px";
+  button.style.right = "20px";
+  button.style.width = "60px";
+  button.style.height = "60px";
+  button.style.borderRadius = "50%";
+  button.style.border = "none";
+  button.style.background = "#e53935";
+  button.style.color = "white";
+  button.style.fontSize = "28px";
+  button.style.cursor = "pointer";
+  button.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+  button.style.zIndex = "9999";
+  document.body.appendChild(button);
+
+  const chatWrapper = document.createElement("div");
+  chatWrapper.style.position = "fixed";
+  chatWrapper.style.bottom = "90px";
+  chatWrapper.style.right = "20px";
+  chatWrapper.style.width = "360px";
+  chatWrapper.style.height = "500px";
+  chatWrapper.style.background = "white";
+  chatWrapper.style.borderRadius = "16px";
+  chatWrapper.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)";
+  chatWrapper.style.overflow = "hidden";
+  chatWrapper.style.display = "none";
+  chatWrapper.style.flexDirection = "column";
+  chatWrapper.style.zIndex = "9999";
+  document.body.appendChild(chatWrapper);
+
+  const header = document.createElement("div");
+  header.style.height = "60px";
+  header.style.background = "#e53935";
+  header.style.color = "white";
+  header.style.display = "flex";
+  header.style.alignItems = "center";
+  header.style.justifyContent = "space-between";
+  header.style.padding = "0 16px";
+  header.style.fontFamily = "Arial, sans-serif";
+  header.style.fontSize = "18px";
+  header.style.fontWeight = "bold";
+  header.innerText = "Chat podrška";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.innerHTML = "✕";
+  closeBtn.style.background = "transparent";
+  closeBtn.style.border = "none";
+  closeBtn.style.color = "white";
+  closeBtn.style.fontSize = "20px";
+  closeBtn.style.cursor = "pointer";
+  closeBtn.style.marginLeft = "auto";
+
+  header.appendChild(closeBtn);
+  chatWrapper.appendChild(header);
+
+  const chatContainer = document.createElement("div");
+  chatContainer.id = "webchat";
+  chatContainer.style.flex = "1";
+  chatContainer.style.minHeight = "0";
+  chatWrapper.appendChild(chatContainer);
+
+  let initialized = false;
+
+  async function initChat() {
+    const res = await fetch("/api/token");
+    const data = await res.json();
+
+    window.WebChat.renderWebChat(
+      {
+        directLine: window.WebChat.createDirectLine({
+          token: data.token,
+          domain: "https://europe.directline.botframework.com/v3/directline"
+        }),
+        userID: "user1",
+        username: "TI",
+        styleOptions: {
+          hideUploadButton: true,
+          botAvatarImage: window.location.origin + "/banner.png",
+          botAvatarInitials: "",
+          userAvatarInitials: "TI",
+          avatarSize: 40,
+          bubbleBorderRadius: 12,
+          sendBoxBorderTop: "1px solid #eee",
+          backgroundColor: "#ffffff",
+          showAvatarInGroup: true
+        }
+      },
+      chatContainer
+    );
+  }
+
+  button.addEventListener("click", async () => {
+    if (chatWrapper.style.display === "none") {
+      chatWrapper.style.display = "flex";
+      if (!initialized) {
+        if (window.WebChat) {
+          await initChat();
+          initialized = true;
+        } else {
+          script.onload = async () => {
+            await initChat();
+            initialized = true;
+          };
+        }
+      }
+    } else {
+      chatWrapper.style.display = "none";
+    }
+  });
+
+  closeBtn.addEventListener("click", () => {
+    chatWrapper.style.display = "none";
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const openChatBtn = document.getElementById("openChat");
+
+    if (openChatBtn) {
+      openChatBtn.addEventListener("click", () => {
+        button.click();
+      });
+    }
+  });
+})();

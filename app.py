@@ -91,6 +91,16 @@ async def messages(req: Request) -> Response:
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post("/api/messages", messages)
 
+async def widget(req: Request) -> Response:
+    return web.FileResponse('./widget.js')
+
+APP.router.add_get("/widget.js", widget)
+
+async def banner(req: Request) -> Response:
+    return web.FileResponse('./banner.png')
+
+APP.router.add_get("/banner.png", banner)
+
 # async def root(req: Request) -> Response:
 #     return Response(text="Bot is running!", status=200)
 
