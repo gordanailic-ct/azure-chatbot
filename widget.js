@@ -2,61 +2,77 @@
   const script = document.createElement("script");
   script.src = "https://cdn.botframework.com/botframework-webchat/latest/webchat.js";
   document.head.appendChild(script);
-function applyChatStyles() {
-  const existing = document.getElementById("custom-webchat-style");
-  if (existing) {
-    existing.remove();
+
+  function applyChatStyles() {
+    const existing = document.getElementById("custom-webchat-style");
+    if (existing) {
+      existing.remove();
+    }
+
+    const style = document.createElement("style");
+    style.id = "custom-webchat-style";
+    style.innerHTML = `
+      #webchat,
+      #webchat * {
+        font-family: "Segoe UI", Arial, sans-serif !important;
+        color: #222 !important;
+      }
+
+      #webchat p,
+      #webchat li,
+      #webchat span,
+      #webchat div,
+      #webchat a {
+        font-family: "Segoe UI", Arial, sans-serif !important;
+        font-size: 15px !important;
+        line-height: 1.4 !important;
+        color: #222 !important;
+        font-weight: 400 !important;
+      }
+
+      #webchat a {
+        text-decoration: underline !important;
+      }
+
+      #webchat ol,
+      #webchat ul {
+        margin: 6px 0 !important;
+        padding-left: 20px !important;
+      }
+
+      #webchat li {
+        margin: 2px 0 !important;
+      }
+    `;
+
+    document.head.appendChild(style);
   }
 
-  const style = document.createElement("style");
-  style.id = "custom-webchat-style";
-  style.innerHTML = `
-    #webchat,
-    #webchat * {
-      font-family: "Segoe UI", Arial, sans-serif !important;
-      color: #555 !important;
+  function showToast(message, type = "success") {
+    const toast = document.getElementById("toast");
+    if (!toast) return;
+
+    toast.innerText = message;
+    toast.className = "toast show " + type;
+
+    setTimeout(() => {
+      toast.className = "toast hidden";
+    }, 3000);
+  }
+
+  function showTyping() {
+    const el = document.getElementById("typingIndicator");
+    if (el) {
+      el.style.display = "block";
     }
+  }
 
-    #webchat p,
-    #webchat li,
-    #webchat span,
-    #webchat div,
-    #webchat a {
-      font-family: "Segoe UI", Arial, sans-serif !important;
-      font-size: 15px !important;
-      line-height: 1.4 !important;
-      color: #555 !important;
-      font-weight: 400 !important;
+  function hideTyping() {
+    const el = document.getElementById("typingIndicator");
+    if (el) {
+      el.style.display = "none";
     }
-
-    #webchat a {
-      text-decoration: underline !important;
-    }
-
-    #webchat ol,
-    #webchat ul {
-      margin: 6px 0 !important;
-      padding-left: 20px !important;
-    }
-
-    #webchat li {
-      margin: 2px 0 !important;
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
-function showToast(message, type = "success") {
-  const toast = document.getElementById("toast");
-
-  toast.innerText = message;
-  toast.className = "toast show " + type;
-
-  setTimeout(() => {
-    toast.className = "toast hidden";
-  }, 3000);
-}
+  }
 
   const button = document.createElement("button");
   button.innerHTML = "💬";
@@ -73,7 +89,16 @@ function showToast(message, type = "success") {
   button.style.cursor = "pointer";
   button.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
   button.style.zIndex = "9999";
+  button.style.transition = "all 0.2s ease";
   document.body.appendChild(button);
+
+  button.addEventListener("mouseenter", () => {
+    button.style.transform = "scale(1.05)";
+  });
+
+  button.addEventListener("mouseleave", () => {
+    button.style.transform = "scale(1)";
+  });
 
   const chatWrapper = document.createElement("div");
   chatWrapper.style.position = "fixed";
@@ -108,6 +133,7 @@ function showToast(message, type = "success") {
       <span>ITSM Asistent</span>
     </div>
   `;
+
   const closeBtn = document.createElement("button");
   closeBtn.innerHTML = "✕";
   closeBtn.style.background = "transparent";
@@ -120,6 +146,18 @@ function showToast(message, type = "success") {
   header.appendChild(closeBtn);
   chatWrapper.appendChild(header);
 
+  const typingIndicator = document.createElement("div");
+  typingIndicator.id = "typingIndicator";
+  typingIndicator.innerText = "Asistent kuca...";
+  typingIndicator.style.display = "none";
+  typingIndicator.style.padding = "8px 16px";
+  typingIndicator.style.fontFamily = '"Segoe UI", Arial, sans-serif';
+  typingIndicator.style.fontSize = "13px";
+  typingIndicator.style.color = "#666";
+  typingIndicator.style.background = "#fafafa";
+  typingIndicator.style.borderBottom = "1px solid #eee";
+  chatWrapper.appendChild(typingIndicator);
+
   const chatContainer = document.createElement("div");
   chatContainer.id = "webchat";
   chatContainer.style.flex = "1";
@@ -129,61 +167,97 @@ function showToast(message, type = "success") {
 
   let initialized = false;
 
-async function initChat() {
-  const res = await fetch("/api/token");
-  const data = await res.json();
+  async function initChat() {
+    const res = await fetch("/api/token");
+    const data = await res.json();
 
-  const styleSet = window.WebChat.createStyleSet({
-    hideUploadButton: true,
-    avatarSize: 40,
-    bubbleBorderRadius: 12,
-    bubbleMaxWidth: 280,
-    sendBoxBorderTop: "1px solid #eee",
-    backgroundColor: "#ffffff",
-    showAvatarInGroup: true
-  });
+    const styleSet = window.WebChat.createStyleSet({
+      hideUploadButton: true,
+      avatarSize: 40,
+      bubbleBorderRadius: 12,
+      bubbleMaxWidth: 280,
+      sendBoxBorderTop: "1px solid #eee",
+      backgroundColor: "#ffffff",
+      showAvatarInGroup: true
+    });
 
-  styleSet.textContent = {
-    ...styleSet.textContent,
-    fontFamily: '"Segoe UI", Arial, sans-serif',
-    fontSize: '15px',
-    lineHeight: '1.4',
-    color: '#222'
-  };
+    styleSet.textContent = {
+      ...styleSet.textContent,
+      fontFamily: '"Segoe UI", Arial, sans-serif',
+      fontSize: "15px",
+      lineHeight: "1.4",
+      color: "#222"
+    };
 
-  styleSet.markdownText = {
-    ...styleSet.markdownText,
-    fontFamily: '"Segoe UI", Arial, sans-serif',
-    fontSize: '15px',
-    lineHeight: '1.4',
-    color: '#555'
-  };
+    styleSet.markdownText = {
+      ...styleSet.markdownText,
+      fontFamily: '"Segoe UI", Arial, sans-serif',
+      fontSize: "15px",
+      lineHeight: "1.4",
+      color: "#222"
+    };
 
-  window.WebChat.renderWebChat(
-    {
-      directLine: window.WebChat.createDirectLine({
-        token: data.token,
-        domain: "https://europe.directline.botframework.com/v3/directline"
-      }),
-      userID: "user1",
-      username: "TI",
-      styleSet,
-      styleOptions: {
-        botAvatarImage: window.location.origin + "/banner.png",
-        botAvatarInitials: "IT",
-        userAvatarInitials: "TI",
-        avatarSize: 40,
-        showAvatarInGroup: true
+    const store = window.WebChat.createStore({}, () => next => action => {
+      if (action.type === "DIRECT_LINE/POST_ACTIVITY") {
+        const activity = action.payload && action.payload.activity;
+
+        if (activity && activity.type === "message") {
+          showTyping();
+        }
       }
-    },
-    chatContainer
-  );
 
-  applyChatStyles();
-}
+      if (action.type === "DIRECT_LINE/INCOMING_ACTIVITY") {
+        const activity = action.payload && action.payload.activity;
+
+        if (
+          activity &&
+          activity.type === "message" &&
+          activity.from &&
+          activity.from.id !== "user1"
+        ) {
+          hideTyping();
+        }
+      }
+
+      return next(action);
+    });
+
+    window.WebChat.renderWebChat(
+      {
+        directLine: window.WebChat.createDirectLine({
+          token: data.token,
+          domain: "https://europe.directline.botframework.com/v3/directline"
+        }),
+        userID: "user1",
+        username: "TI",
+        store,
+        styleSet,
+        styleOptions: {
+          botAvatarImage: window.location.origin + "/banner.png",
+          botAvatarInitials: "IT",
+          userAvatarInitials: "TI",
+          avatarSize: 40,
+          showAvatarInGroup: true
+        }
+      },
+      chatContainer
+    );
+
+    applyChatStyles();
+  }
+
   button.addEventListener("click", async () => {
     if (chatWrapper.style.display === "none") {
       chatWrapper.style.display = "flex";
+      chatWrapper.style.opacity = "0";
+      chatWrapper.style.transform = "translateY(10px)";
+
+      setTimeout(() => {
+        chatWrapper.style.transition = "all 0.25s ease";
+        chatWrapper.style.opacity = "1";
+        chatWrapper.style.transform = "translateY(0)";
+      }, 10);
+
       if (!initialized) {
         if (window.WebChat) {
           await initChat();
@@ -196,63 +270,74 @@ async function initChat() {
         }
       }
     } else {
-      chatWrapper.style.display = "none";
+      hideTyping();
+      chatWrapper.style.opacity = "0";
+      chatWrapper.style.transform = "translateY(10px)";
+
+      setTimeout(() => {
+        chatWrapper.style.display = "none";
+      }, 200);
     }
   });
 
   closeBtn.addEventListener("click", () => {
-    chatWrapper.style.display = "none";
+    hideTyping();
+    chatWrapper.style.opacity = "0";
+    chatWrapper.style.transform = "translateY(10px)";
+
+    setTimeout(() => {
+      chatWrapper.style.display = "none";
+    }, 200);
   });
 
-document.addEventListener("DOMContentLoaded", () => {
-  const openChatBtn = document.getElementById("openChat");
-  const syncBtn = document.getElementById("syncDocs");
+  document.addEventListener("DOMContentLoaded", () => {
+    const openChatBtn = document.getElementById("openChat");
+    const syncBtn = document.getElementById("syncDocs");
 
-  if (openChatBtn) {
-    openChatBtn.addEventListener("click", () => {
-  openChatBtn.style.transform = "scale(0.96)";
+    if (openChatBtn) {
+      openChatBtn.addEventListener("click", () => {
+        openChatBtn.style.transform = "scale(0.96)";
 
-  setTimeout(() => {
-    openChatBtn.style.transform = "";
-    button.click();
-      }, 120);
-    });
-  }
+        setTimeout(() => {
+          openChatBtn.style.transform = "";
+          button.click();
+        }, 120);
+      });
+    }
 
-  if (syncBtn) {
-    syncBtn.addEventListener("click", async () => {
-      syncBtn.disabled = true;
-      const originalText = syncBtn.innerText;
-      syncBtn.innerText = "⟳ Sync u toku...";
-      syncBtn.style.transform = "scale(0.97)";
-      syncBtn.style.opacity = "0.85";
-     
+    if (syncBtn) {
+      syncBtn.addEventListener("click", async () => {
+        syncBtn.disabled = true;
+        const originalText = syncBtn.innerText;
+        syncBtn.innerText = "⟳ Sync u toku...";
+        syncBtn.style.transform = "scale(0.97)";
+        syncBtn.style.opacity = "0.85";
 
-      try {
-        const res = await fetch("/api/sync-docs", {
-          method: "POST"
-        });
+        try {
+          const res = await fetch("/api/sync-docs", {
+            method: "POST"
+          });
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (data.success) {
-          showToast(
-          "Sync uspešan ✔\n" +
-          "Obrađeni: " + data.result.processed.length +
-          " | Preskočeni: " + data.result.skipped.length
-        );
-        } else {
-          showToast("Greška: " + data.message, "error");
+          if (data.success) {
+            showToast(
+              "Sync uspešan ✔\n" +
+              "Obrađeni: " + data.result.processed.length +
+              " | Preskočeni: " + data.result.skipped.length
+            );
+          } else {
+            showToast("Greška: " + data.message, "error");
+          }
+        } catch (err) {
+          showToast("Greška prilikom sync-a.", "error");
+        } finally {
+          syncBtn.disabled = false;
+          syncBtn.innerText = originalText;
+          syncBtn.style.transform = "";
+          syncBtn.style.opacity = "";
         }
-      } catch (err) {
-        showToast("Grešk prilikom synca ");
-      } finally {
-        syncBtn.disabled = false;
-        syncBtn.innerText = originalText;
-        syncBtn.style.transform = "";
-        syncBtn.style.opacity = "";
-        
-      }
-    });
-  }
-})})();
+      });
+    }
+  });
+})();

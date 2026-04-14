@@ -1,15 +1,13 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
-
+import asyncio
 from botbuilder.core import ActivityHandler, MessageFactory, TurnContext
-from botbuilder.schema import ChannelAccount
+from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
 from rag_query import ask_question
 
 class EchoBot(ActivityHandler):
     def __init__(self):
         super().__init__()
-        self.conversations = {}   # ovde pamtimo poruke po conversation.id
-        self.max_history = 10     # koliko poslednjih poruka cuvamo
+        self.conversations = {}
+        self.max_history = 10
 
     async def on_members_added_activity(
         self, members_added: [ChannelAccount], turn_context: TurnContext
@@ -18,43 +16,53 @@ class EchoBot(ActivityHandler):
             if member.id != turn_context.activity.recipient.id:
                 await turn_context.send_activity("Dobrodosli!")
 
+    async def _send_typing_loop(self, turn_context: TurnContext, stop_event: asyncio.Event):
+        while not stop_event.is_set():
+            await turn_context.send_activity(Activity(type=ActivityTypes.typing))
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=1.5)
+            except asyncio.TimeoutError:
+                pass
+
     async def on_message_activity(self, turn_context: TurnContext):
         question = turn_context.activity.text.strip()
-
-        # 1. uzmi conversation.id
         conversation_id = turn_context.activity.conversation.id
         print("conversation_id:", conversation_id)
 
-        # 2. ako prvi put vidimo taj conversation id, napravi praznu listu
         if conversation_id not in self.conversations:
             self.conversations[conversation_id] = []
 
-        # 3. uzmi staru istoriju za taj razgovor
         history = self.conversations[conversation_id]
 
-        try:
-            #print("HISTORY PRE ODGOVORA:", history)
-            # 4. posalji pitanje + istoriju u RAG
-            answer = ask_question(question, history)
+        stop_event = asyncio.Event()
+        typing_task = None
 
-            # 5. sacuvaj user poruku
+        try:
+            typing_task = asyncio.create_task(self._send_typing_loop(turn_context, stop_event))
+
+            answer = await asyncio.to_thread(ask_question, question, history)
+
             history.append({
                 "role": "user",
                 "content": question
             })
 
-            # 6. sacuvaj bot odgovor
             history.append({
                 "role": "assistant",
                 "content": answer
             })
 
-            # 7. zadrzi samo poslednjih N poruka
             self.conversations[conversation_id] = history[-self.max_history:]
             print("HISTORY POSLE ODGOVORA:", self.conversations[conversation_id])
+
+            stop_event.set()
+            await typing_task
 
             await turn_context.send_activity(MessageFactory.text(answer))
 
         except Exception as e:
+            stop_event.set()
+            if typing_task:
+                await typing_task
             print("GRESKA:", e)
             await turn_context.send_activity("Došlo je do greške prilikom obrade pitanja.")
