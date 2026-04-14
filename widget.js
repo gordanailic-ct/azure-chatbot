@@ -79,11 +79,12 @@ function showToast(message, type = "success") {
   chatWrapper.style.position = "fixed";
   chatWrapper.style.bottom = "90px";
   chatWrapper.style.right = "20px";
-  chatWrapper.style.width = "360px";
-  chatWrapper.style.height = "500px";
+  chatWrapper.style.width = "420px";
+  chatWrapper.style.height = "560px";
   chatWrapper.style.background = "white";
+  chatWrapper.style.border = "1px solid #eee";
   chatWrapper.style.borderRadius = "16px";
-  chatWrapper.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)";
+  chatWrapper.style.boxShadow = "0 20px 60px rgba(0,0,0,0.15)";
   chatWrapper.style.overflow = "hidden";
   chatWrapper.style.display = "none";
   chatWrapper.style.flexDirection = "column";
@@ -101,8 +102,12 @@ function showToast(message, type = "success") {
   header.style.fontFamily = "Arial, sans-serif";
   header.style.fontSize = "18px";
   header.style.fontWeight = "bold";
-  header.innerText = "Chat podrška";
-
+  header.innerHTML = `
+    <div style="display:flex; align-items:center; gap:10px;">
+      <img src="/banner.png" style="width:32px; height:32px; border-radius:50%;" />
+      <span>ITSM Asistent</span>
+    </div>
+  `;
   const closeBtn = document.createElement("button");
   closeBtn.innerHTML = "✕";
   closeBtn.style.background = "transparent";
@@ -119,6 +124,7 @@ function showToast(message, type = "success") {
   chatContainer.id = "webchat";
   chatContainer.style.flex = "1";
   chatContainer.style.minHeight = "0";
+  chatContainer.style.padding = "8px";
   chatWrapper.appendChild(chatContainer);
 
   let initialized = false;
