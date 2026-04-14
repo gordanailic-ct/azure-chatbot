@@ -1,7 +1,7 @@
 from openai import AzureOpenAI
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
-from config import DefaultConfig
+from config.config import DefaultConfig
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, unquote, quote

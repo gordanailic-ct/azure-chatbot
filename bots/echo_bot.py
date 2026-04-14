@@ -1,7 +1,7 @@
 import asyncio
 from botbuilder.core import ActivityHandler, MessageFactory, TurnContext
 from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
-from rag_query import ask_question
+from services.rag_query import ask_question
 
 class EchoBot(ActivityHandler):
     def __init__(self):

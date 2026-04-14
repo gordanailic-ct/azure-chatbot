@@ -13,8 +13,8 @@ from opencensus.ext.azure.log_exporter import AzureLogHandler
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 
-from config import DefaultConfig
-from extract_pdf_text import sync_new_documents
+from config.config import DefaultConfig
+from services.extract_pdf_text import sync_new_documents
 
 CONFIG = DefaultConfig()
 print("APP_ID exists:", bool(CONFIG.APP_ID))
@@ -44,7 +44,7 @@ from botbuilder.schema import Activity, ActivityTypes
 sys.path.insert(0, os.path.dirname(__file__))
 
 from bots.echo_bot import EchoBot
-from config import DefaultConfig
+from config.config import DefaultConfig
 
 CONFIG = DefaultConfig()
 

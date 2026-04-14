@@ -3,8 +3,8 @@ from openai import AzureOpenAI
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from azure.storage.blob import BlobServiceClient
-from sync_state import load_index_state, save_index_state
-from config import DefaultConfig
+from services.sync_state import load_index_state, save_index_state
+from config.config import DefaultConfig
 import io
 from dotenv import load_dotenv
 import re
