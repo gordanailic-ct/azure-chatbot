@@ -17,12 +17,6 @@ from config.config import DefaultConfig
 from services.extract_pdf_text import sync_new_documents
 
 CONFIG = DefaultConfig()
-print("APP_ID exists:", bool(CONFIG.APP_ID))
-print("APP_PASSWORD exists:", bool(CONFIG.APP_PASSWORD))
-print("APP_TYPE:", CONFIG.APP_TYPE)
-print("APP_TENANTID exists:", bool(CONFIG.APP_TENANTID))
-print("DIRECT_LINE_SECRET exists:", bool(CONFIG.DIRECT_LINE_SECRET))
-
 # 👇 LOGGING SETUP
 logger = logging.getLogger(__name__)
 logger.addHandler(

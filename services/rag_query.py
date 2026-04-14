@@ -5,20 +5,11 @@ from config.config import DefaultConfig
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, unquote, quote
+from services.azure_clients import get_openai_client, get_search_client
 
 CONFIG = DefaultConfig()
-
-openai_client = AzureOpenAI(
-    api_key=CONFIG.AZURE_OPENAI_API_KEY,
-    api_version="2024-02-15-preview",
-    azure_endpoint=CONFIG.AZURE_OPENAI_ENDPOINT
-)
-
-search_client = SearchClient(
-    endpoint=CONFIG.AZURE_SEARCH_ENDPOINT,
-    index_name="chatbot-index-goga",
-    credential=AzureKeyCredential(CONFIG.AZURE_SEARCH_API_KEY)
-)
+openai_client = get_openai_client()
+search_client = get_search_client()
 
 def generate_sas_url_from_existing_url(blob_url, page=None):
     parsed = urlparse(blob_url)
@@ -60,14 +51,14 @@ def rewrite_question_with_history(question, history):
         {
             "role": "system",
             "content": """Preformuliši trenutno korisničko pitanje tako da bude potpuno samostalno i jasno,
-uzimajući u obzir prethodnu istoriju razgovora.
+            uzimajući u obzir prethodnu istoriju razgovora.
 
-Pravila:
-- zadrži isto značenje
-- nemoj odgovarati na pitanje
-- vrati samo preformulisano pitanje
-- ako je pitanje već jasno samo po sebi, vrati ga bez izmene
-- odgovori na srpskom jeziku"""
+            Pravila:
+            - zadrži isto značenje
+            - nemoj odgovarati na pitanje
+            - vrati samo preformulisano pitanje
+            - ako je pitanje već jasno samo po sebi, vrati ga bez izmene
+            - odgovori na srpskom jeziku"""
         }
     ]
 
@@ -131,13 +122,13 @@ def ask_question(question, history=None):
             "role": "system",
             "content": """Ti si interni ITSM support chatbot koji pomaže korisnicima u radu sa tiketing sistemom.
 
-Koristi isključivo informacije iz prosleđene dokumentacije kada odgovaraš na pitanja o ITSM alatu.
-Ako odgovor ne postoji u dokumentaciji, nemoj izmišljati.
+            Koristi isključivo informacije iz prosleđene dokumentacije kada odgovaraš na pitanja o ITSM alatu.
+            Ako odgovor ne postoji u dokumentaciji, nemoj izmišljati.
 
-Istoriju razgovora koristi da razumeš na šta se trenutno pitanje odnosi.
-Odgovaraj jasno, kratko i na srpskom jeziku.
+            Istoriju razgovora koristi da razumeš na šta se trenutno pitanje odnosi.
+            Odgovaraj jasno, kratko i na srpskom jeziku.
 
-Ako pitanje nije vezano za ITSM alat, ljubazno reci da možeš da pomogneš samo oko ITSM alata."""
+            Ako pitanje nije vezano za ITSM alat, ljubazno reci da možeš da pomogneš samo oko ITSM alata."""
         }
     ]
 
@@ -150,16 +141,16 @@ Ako pitanje nije vezano za ITSM alat, ljubazno reci da možeš da pomogneš samo
     messages.append({
         "role": "user",
         "content": f"""Dokumentacija:
-{context}
+        {context}
 
-Originalno pitanje korisnika:
-{question}
+        Originalno pitanje korisnika:
+        {question}
 
-Preformulisano pitanje uz kontekst razgovora:
-{standalone_question}
+        Preformulisano pitanje uz kontekst razgovora:
+        {standalone_question}
 
-Odgovori koristeći samo informacije koje su direktno relevantne za pitanje.
-Ne uključuj informacije iz susednih sekcija ako nisu deo direktnog odgovora."""
+        Odgovori koristeći samo informacije koje su direktno relevantne za pitanje.
+        Ne uključuj informacije iz susednih sekcija ako nisu deo direktnog odgovora."""
     })
 
     response = openai_client.chat.completions.create(

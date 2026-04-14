@@ -8,11 +8,16 @@ from config.config import DefaultConfig
 import io
 from dotenv import load_dotenv
 import re
+from services.azure_clients import get_openai_client, get_search_client
+
 
 load_dotenv()
 
 CONFIG = DefaultConfig()
 
+
+openai_client = get_openai_client()
+search_client = get_search_client()
 
 def sanitize_key(text):
     return re.sub(r'[^a-zA-Z0-9_-]', '_', text)
@@ -30,20 +35,6 @@ def chunk_text(text, chunk_size=1500, overlap=200):
 
     return chunks
 
-
-# Azure OpenAI
-openai_client = AzureOpenAI(
-    api_key=CONFIG.AZURE_OPENAI_API_KEY,
-    api_version="2024-02-15-preview",
-    azure_endpoint=CONFIG.AZURE_OPENAI_ENDPOINT
-)
-
-# Azure AI Search
-search_client = SearchClient(
-    endpoint=CONFIG.AZURE_SEARCH_ENDPOINT,
-    index_name="chatbot-index-goga",
-    credential=AzureKeyCredential(CONFIG.AZURE_SEARCH_API_KEY)
-)
 
 # Blob Storage
 blob_service_client = BlobServiceClient.from_connection_string(
