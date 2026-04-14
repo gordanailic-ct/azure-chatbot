@@ -15,10 +15,10 @@ class DefaultConfig:
     """ Bot Configuration """
 
     PORT = 3978
-    APP_ID = os.environ.get("MicrosoftAppId")
-    APP_PASSWORD = os.environ.get("MicrosoftAppPassword")
-    APP_TYPE = os.environ.get("MicrosoftAppType")
-    APP_TENANTID = os.environ.get("MicrosoftAppTenantId")
+    # APP_ID = os.environ.get("MicrosoftAppId")
+    # APP_PASSWORD = os.environ.get("MicrosoftAppPassword")
+    # APP_TYPE = os.environ.get("MicrosoftAppType")
+    # APP_TENANTID = os.environ.get("MicrosoftAppTenantId")
     APPINSIGHTS_CONNECTION_STRING =os.environ.get("APPINSIGHTS_CONNECTION_STRING")
     DIRECT_LINE_SECRET = os.environ.get("DIRECT_LINE_SECRET")
 
