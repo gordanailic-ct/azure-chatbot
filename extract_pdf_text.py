@@ -8,13 +8,27 @@ import io
 from dotenv import load_dotenv
 import re
 
-
 load_dotenv()
 
 CONFIG = DefaultConfig()
 
+
 def sanitize_key(text):
     return re.sub(r'[^a-zA-Z0-9_-]', '_', text)
+
+
+def chunk_text(text, chunk_size=1500, overlap=200):
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += chunk_size - overlap
+
+    return chunks
+
 
 # Azure OpenAI
 openai_client = AzureOpenAI(
@@ -41,7 +55,7 @@ container_client = blob_service_client.get_container_client(
 
 documents = []
 
-# 🔥 prolaz kroz sve PDF fajlove
+# prolaz kroz sve PDF fajlove
 for blob in container_client.list_blobs():
 
     if not blob.name.endswith(".pdf"):
@@ -51,51 +65,46 @@ for blob in container_client.list_blobs():
 
     blob_client = container_client.get_blob_client(blob)
     stream = blob_client.download_blob().readall()
+    file_url = blob_client.url
 
     reader = PdfReader(io.BytesIO(stream))
 
-    text = ""
+    total_chunks_for_file = 0
+    safe_filename = sanitize_key(blob.name)
 
-    # 🔹 ekstrakcija teksta
-    for page in reader.pages:
+    # ekstrakcija teksta po stranama
+    for page_num, page in enumerate(reader.pages, start=1):
         page_text = page.extract_text()
-        if page_text:
-            text += page_text + "\n"
 
-    # 🔹 chunking
-    chunk_size = 1500
-    overlap = 200
-    start = 0
-    chunks = []
+        if not page_text or not page_text.strip():
+            continue
 
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
-        start += chunk_size - overlap
+        # chunking po jednoj strani
+        chunks = chunk_text(page_text)
 
-    print(f"{blob.name} → {len(chunks)} chunkova")
+        for i, chunk in enumerate(chunks):
+            embedding = openai_client.embeddings.create(
+                model="text-embedding-3-large",
+                input=chunk
+            )
 
-    # 🔹 embedding + dokumenti
-    for i, chunk in enumerate(chunks):
+            vector = embedding.data[0].embedding
 
-        embedding = openai_client.embeddings.create(
-            model="text-embedding-3-large",
-            input=chunk
-        )
+            doc = {
+                "id": f"{safe_filename}-p{page_num}-{i}",
+                "content": chunk,
+                "contentVector": vector,
+                "source": blob.name,
+                "page": page_num,
+                "url": file_url
+            }
 
-        vector = embedding.data[0].embedding
-        safe_filename = sanitize_key(blob.name)
+            documents.append(doc)
+            total_chunks_for_file += 1
 
-        doc = {
-            "id": f"{safe_filename}-{i}",  # 🔥 bitno da bude unique
-            "content": chunk,
-            "contentVector": vector
-        }
+    print(f"{blob.name} → {total_chunks_for_file} chunkova")
 
-        documents.append(doc)
-
-# 🔹 upload u AI Search
+# upload u AI Search
 if documents:
     search_client.upload_documents(documents)
     print(f"Ukupno ubaceno {len(documents)} dokumenata!")

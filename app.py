@@ -16,6 +16,11 @@ from aiohttp.web import Request, Response, json_response
 from config import DefaultConfig
 
 CONFIG = DefaultConfig()
+print("APP_ID exists:", bool(CONFIG.APP_ID))
+print("APP_PASSWORD exists:", bool(CONFIG.APP_PASSWORD))
+print("APP_TYPE:", CONFIG.APP_TYPE)
+print("APP_TENANTID exists:", bool(CONFIG.APP_TENANTID))
+print("DIRECT_LINE_SECRET exists:", bool(CONFIG.DIRECT_LINE_SECRET))
 
 # 👇 LOGGING SETUP
 logger = logging.getLogger(__name__)
@@ -90,6 +95,12 @@ async def messages(req: Request) -> Response:
 
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post("/api/messages", messages)
+
+#async def messages_get(req: Request) -> Response:
+#    print("GET /api/messages pogodjen", flush=True)
+#   return Response(text="api/messages radi (GET test)", status=200)
+
+#APP.router.add_get("/api/messages", messages_get)
 
 async def widget(req: Request) -> Response:
     return web.FileResponse('./widget.js')
