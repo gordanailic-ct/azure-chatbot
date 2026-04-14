@@ -104,7 +104,7 @@ APP.router.add_post("/api/messages", messages)
 #APP.router.add_get("/api/messages", messages_get)
 
 async def widget(req: Request) -> Response:
-    return web.FileResponse('./widget.js')
+    return web.FileResponse('./static/widget.js')
 
 APP.router.add_get("/widget.js", widget)
 
@@ -150,11 +150,12 @@ async def sync_docs(req: Request) -> Response:
 APP.router.add_post("/api/sync-docs", sync_docs)
 
 async def index(req: Request) -> Response:
-    if os.path.exists('./chat.html'):
-        return web.FileResponse('./chat.html')
+    if os.path.exists('./static/chat.html'):
+        return web.FileResponse('./static/chat.html')
     return Response(text="App is running!", status=200)
 
 APP.router.add_get("/", index)
+APP.router.add_static("/static/", path="./static", name="static")
 app = APP
 
 

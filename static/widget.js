@@ -129,7 +129,7 @@
   header.style.fontWeight = "bold";
   header.innerHTML = `
     <div style="display:flex; align-items:center; gap:10px;">
-      <img src="/banner.png" style="width:32px; height:32px; border-radius:50%;" />
+      <img src="/static/banner.png" style="width:32px; height:32px; border-radius:50%;" />
       <span>ITSM Asistent</span>
     </div>
   `;
@@ -233,7 +233,7 @@
         store,
         styleSet,
         styleOptions: {
-          botAvatarImage: window.location.origin + "/banner.png",
+          botAvatarImage: window.location.origin + "/static/banner.png",
           botAvatarInitials: "IT",
           userAvatarInitials: "TI",
           avatarSize: 40,
