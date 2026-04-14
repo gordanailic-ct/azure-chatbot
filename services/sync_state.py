@@ -1,7 +1,8 @@
 import json
 import os
 
-STATE_FILE = "indexed_blobs.json"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATE_FILE = os.path.join(BASE_DIR, "data", "indexed_blobs.json")
 
 
 def load_index_state():
@@ -13,5 +14,7 @@ def load_index_state():
 
 
 def save_index_state(state):
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
