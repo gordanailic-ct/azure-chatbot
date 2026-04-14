@@ -204,7 +204,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (openChatBtn) {
     openChatBtn.addEventListener("click", () => {
-      button.click();
+  openChatBtn.style.transform = "scale(0.96)";
+
+  setTimeout(() => {
+    openChatBtn.style.transform = "";
+    button.click();
+      }, 120);
     });
   }
 

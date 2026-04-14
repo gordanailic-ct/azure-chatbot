@@ -87,11 +87,17 @@
       background: #e53935;
       color: white;
       box-shadow: 0 10px 25px rgba(229, 57, 53, 0.25);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     .btn-primary:hover {
       transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(229, 57, 53, 0.3);
     }
+
+    .btn-primary:active {
+      transform: scale(0.96);
+}
 
     .btn-secondary {
       background: white;
