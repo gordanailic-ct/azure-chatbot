@@ -14,6 +14,7 @@ from aiohttp import web
 from aiohttp.web import Request, Response, json_response
 
 from config import DefaultConfig
+from extract_pdf_text import sync_new_documents
 
 CONFIG = DefaultConfig()
 print("APP_ID exists:", bool(CONFIG.APP_ID))
@@ -130,6 +131,23 @@ async def get_token(req: Request) -> Response:
     return web.json_response(response.json())
 
 APP.router.add_get("/api/token", get_token)
+
+async def sync_docs(req: Request) -> Response:
+    try:
+        result = sync_new_documents()
+        return web.json_response({
+            "success": True,
+            "message": "Sync uspešno završen.",
+            "result": result
+        })
+    except Exception as e:
+        logger.error(f"Sync error: {e}")
+        return web.json_response({
+            "success": False,
+            "message": str(e)
+        }, status=500)
+    
+APP.router.add_post("/api/sync-docs", sync_docs)
 
 async def index(req: Request) -> Response:
     if os.path.exists('./chat.html'):

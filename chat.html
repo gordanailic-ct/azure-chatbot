@@ -206,6 +206,66 @@
         padding: 24px;
       }
     }
+    .sync-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: #e53935;
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 9999;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(229, 57, 53, 0.22);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .sync-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(229, 57, 53, 0.28);
+    }
+
+    .sync-btn:active {
+      transform: scale(0.97);
+    }
+
+    .sync-btn:disabled {
+      opacity: 0.75;
+      cursor: not-allowed;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 20px;
+      background: #222;
+      color: white;
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.25s ease;
+      z-index: 9999;
+      max-width: 260px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.success {
+      background: #2e7d32;
+    }
+
+    .toast.error {
+      background: #c62828;
+}
   </style>
 </head>
 <body>
@@ -223,6 +283,10 @@
 
         <div class="cta-row">
           <button class="btn btn-primary" id="openChat">Pokreni chat</button>
+          <button id="syncDocs" class="sync-btn">
+            Sync dokumenta
+          </button>
+       
         </div>
       </div>
 
@@ -243,6 +307,6 @@
       </div>
     </div>
   </div>
-
+  <div id="toast" class="toast hidden"></div>
   <script src="/widget.js?v=2"></script></body>
 </html>

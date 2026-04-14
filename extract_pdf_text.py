@@ -3,6 +3,7 @@ from openai import AzureOpenAI
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from azure.storage.blob import BlobServiceClient
+from sync_state import load_index_state, save_index_state
 from config import DefaultConfig
 import io
 from dotenv import load_dotenv
@@ -53,13 +54,8 @@ container_client = blob_service_client.get_container_client(
     CONFIG.CONTAINER_NAME
 )
 
-documents = []
-
-# prolaz kroz sve PDF fajlove
-for blob in container_client.list_blobs():
-
-    if not blob.name.endswith(".pdf"):
-        continue
+def process_blob_pdf(blob):
+    documents = []
 
     print(f"Obradjujem: {blob.name}")
 
@@ -72,14 +68,12 @@ for blob in container_client.list_blobs():
     total_chunks_for_file = 0
     safe_filename = sanitize_key(blob.name)
 
-    # ekstrakcija teksta po stranama
     for page_num, page in enumerate(reader.pages, start=1):
         page_text = page.extract_text()
 
         if not page_text or not page_text.strip():
             continue
 
-        # chunking po jednoj strani
         chunks = chunk_text(page_text)
 
         for i, chunk in enumerate(chunks):
@@ -102,11 +96,42 @@ for blob in container_client.list_blobs():
             documents.append(doc)
             total_chunks_for_file += 1
 
+    if documents:
+        search_client.upload_documents(documents)
+
     print(f"{blob.name} → {total_chunks_for_file} chunkova")
 
-# upload u AI Search
-if documents:
-    search_client.upload_documents(documents)
-    print(f"Ukupno ubaceno {len(documents)} dokumenata!")
-else:
-    print("Nema dokumenata za upload.")
+    return total_chunks_for_file
+
+def sync_new_documents():
+    state = load_index_state()
+
+    processed_files = []
+    skipped_files = []
+
+    for blob in container_client.list_blobs():
+        if not blob.name.lower().endswith(".pdf"):
+            continue
+
+        current_etag = blob.etag
+        saved = state.get(blob.name)
+
+        # već obrađen i nije menjan
+        if saved and saved.get("etag") == current_etag:
+            skipped_files.append(blob.name)
+            continue
+
+        process_blob_pdf(blob)
+
+        state[blob.name] = {
+            "etag": current_etag
+        }
+
+        processed_files.append(blob.name)
+
+    save_index_state(state)
+
+    return {
+        "processed": processed_files,
+        "skipped": skipped_files
+    }

@@ -47,6 +47,17 @@ function applyChatStyles() {
   document.head.appendChild(style);
 }
 
+function showToast(message, type = "success") {
+  const toast = document.getElementById("toast");
+
+  toast.innerText = message;
+  toast.className = "toast show " + type;
+
+  setTimeout(() => {
+    toast.className = "toast hidden";
+  }, 3000);
+}
+
   const button = document.createElement("button");
   button.innerHTML = "💬";
   button.style.position = "fixed";
@@ -187,13 +198,50 @@ async function initChat() {
     chatWrapper.style.display = "none";
   });
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const openChatBtn = document.getElementById("openChat");
+document.addEventListener("DOMContentLoaded", () => {
+  const openChatBtn = document.getElementById("openChat");
+  const syncBtn = document.getElementById("syncDocs");
 
-    if (openChatBtn) {
-      openChatBtn.addEventListener("click", () => {
-        button.click();
-      });
-    }
-  });
-})();
+  if (openChatBtn) {
+    openChatBtn.addEventListener("click", () => {
+      button.click();
+    });
+  }
+
+  if (syncBtn) {
+    syncBtn.addEventListener("click", async () => {
+      syncBtn.disabled = true;
+      const originalText = syncBtn.innerText;
+      syncBtn.innerText = "⟳ Sync u toku...";
+      syncBtn.style.transform = "scale(0.97)";
+      syncBtn.style.opacity = "0.85";
+     
+
+      try {
+        const res = await fetch("/api/sync-docs", {
+          method: "POST"
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(
+          "Sync uspešan ✔\n" +
+          "Obrađeni: " + data.result.processed.length +
+          " | Preskočeni: " + data.result.skipped.length
+        );
+        } else {
+          showToast("Greška: " + data.message, "error");
+        }
+      } catch (err) {
+        showToast("Grešk prilikom synca ");
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.innerText = originalText;
+        syncBtn.style.transform = "";
+        syncBtn.style.opacity = "";
+        
+      }
+    });
+  }
+})})();
