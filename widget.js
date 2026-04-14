@@ -321,14 +321,24 @@
           const data = await res.json();
 
           if (data.success) {
-            showToast(
-              "Sync uspešan ✔\n" +
-              "Obrađeni: " + data.result.processed.length +
-              " | Preskočeni: " + data.result.skipped.length
-            );
-          } else {
-            showToast("Greška: " + data.message, "error");
-          }
+            const processed = data.result.processed.length;
+            const skipped = data.result.skipped.length;
+              if (processed === 0) {
+                  showToast(
+                    "Sync završen 👍\n" +
+                    "Nema novih dokumenata za obradu\n" +
+                    "Preskočeno: " + skipped
+                  );
+                } else {
+                  showToast(
+                    "Sync uspešan ✔\n" +
+                    "Obrađeno: " + processed +
+                    " | Preskočeno: " + skipped
+                  );
+                }
+              } else {
+                showToast("Greška: " + data.message, "error");
+              }
         } catch (err) {
           showToast("Greška prilikom sync-a.", "error");
         } finally {
