@@ -2,6 +2,50 @@
   const script = document.createElement("script");
   script.src = "https://cdn.botframework.com/botframework-webchat/latest/webchat.js";
   document.head.appendChild(script);
+function applyChatStyles() {
+  const existing = document.getElementById("custom-webchat-style");
+  if (existing) {
+    existing.remove();
+  }
+
+  const style = document.createElement("style");
+  style.id = "custom-webchat-style";
+  style.innerHTML = `
+    #webchat,
+    #webchat * {
+      font-family: "Segoe UI", Arial, sans-serif !important;
+      color: #555 !important;
+    }
+
+    #webchat p,
+    #webchat li,
+    #webchat span,
+    #webchat div,
+    #webchat a {
+      font-family: "Segoe UI", Arial, sans-serif !important;
+      font-size: 15px !important;
+      line-height: 1.4 !important;
+      color: #555 !important;
+      font-weight: 400 !important;
+    }
+
+    #webchat a {
+      text-decoration: underline !important;
+    }
+
+    #webchat ol,
+    #webchat ul {
+      margin: 6px 0 !important;
+      padding-left: 20px !important;
+    }
+
+    #webchat li {
+      margin: 2px 0 !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
 
   const button = document.createElement("button");
   button.innerHTML = "💬";
@@ -68,34 +112,58 @@
 
   let initialized = false;
 
-  async function initChat() {
-    const res = await fetch("/api/token");
-    const data = await res.json();
+async function initChat() {
+  const res = await fetch("/api/token");
+  const data = await res.json();
 
-    window.WebChat.renderWebChat(
-      {
-        directLine: window.WebChat.createDirectLine({
-          token: data.token,
-          domain: "https://europe.directline.botframework.com/v3/directline"
-        }),
-        userID: "user1",
-        username: "TI",
-        styleOptions: {
-          hideUploadButton: true,
-          botAvatarImage: window.location.origin + "/banner.png",
-          botAvatarInitials: "",
-          userAvatarInitials: "TI",
-          avatarSize: 40,
-          bubbleBorderRadius: 12,
-          sendBoxBorderTop: "1px solid #eee",
-          backgroundColor: "#ffffff",
-          showAvatarInGroup: true
-        }
-      },
-      chatContainer
-    );
-  }
+  const styleSet = window.WebChat.createStyleSet({
+    hideUploadButton: true,
+    avatarSize: 40,
+    bubbleBorderRadius: 12,
+    bubbleMaxWidth: 280,
+    sendBoxBorderTop: "1px solid #eee",
+    backgroundColor: "#ffffff",
+    showAvatarInGroup: true
+  });
 
+  styleSet.textContent = {
+    ...styleSet.textContent,
+    fontFamily: '"Segoe UI", Arial, sans-serif',
+    fontSize: '15px',
+    lineHeight: '1.4',
+    color: '#222'
+  };
+
+  styleSet.markdownText = {
+    ...styleSet.markdownText,
+    fontFamily: '"Segoe UI", Arial, sans-serif',
+    fontSize: '15px',
+    lineHeight: '1.4',
+    color: '#555'
+  };
+
+  window.WebChat.renderWebChat(
+    {
+      directLine: window.WebChat.createDirectLine({
+        token: data.token,
+        domain: "https://europe.directline.botframework.com/v3/directline"
+      }),
+      userID: "user1",
+      username: "TI",
+      styleSet,
+      styleOptions: {
+        botAvatarImage: window.location.origin + "/banner.png",
+        botAvatarInitials: "IT",
+        userAvatarInitials: "TI",
+        avatarSize: 40,
+        showAvatarInGroup: true
+      }
+    },
+    chatContainer
+  );
+
+  applyChatStyles();
+}
   button.addEventListener("click", async () => {
     if (chatWrapper.style.display === "none") {
       chatWrapper.style.display = "flex";
