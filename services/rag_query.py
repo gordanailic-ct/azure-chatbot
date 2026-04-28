@@ -1,6 +1,3 @@
-from openai import AzureOpenAI
-from azure.search.documents import SearchClient
-from azure.core.credentials import AzureKeyCredential
 from config.config import DefaultConfig
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta
@@ -53,6 +50,19 @@ def rewrite_question_with_history(question, history):
             "content": """Preformuliši trenutno korisničko pitanje tako da bude potpuno samostalno i jasno,
             uzimajući u obzir prethodnu istoriju razgovora.
 
+            VAŽNO:
+            - Ako je trenutno pitanje kratko, nejasno ili zavisno od prethodnog pitanja, obavezno ubaci temu iz prethodne istorije razgovora.
+            - To posebno važi za pitanja kao:
+            "Možeš detaljnije?",
+            "Objasni mi više",
+            "Šta to znači?",
+            "Kako to?",
+            "A gde se to nalazi?"
+
+            Primer:
+            Prethodno pitanje: Šta je radna površina?
+            Trenutno pitanje: Jel možeš detaljnije da mi objasniš?
+            Preformulisano pitanje: Detaljnije objasni šta je radna površina u ITSM sistemu.
             Pravila:
             - zadrži isto značenje
             - nemoj odgovarati na pitanje
@@ -97,40 +107,116 @@ def ask_question(question, history=None):
     )
 
     vector = embedding.data[0].embedding
-
+    
+    #rag retriviel
     results = list(search_client.search(
-        search_text="",
+        search_text=standalone_question,
         vector_queries=[
             {
                 "kind": "vector",
                 "vector": vector,
-                "k": 3,
+                "k": 10,
                 "fields": "contentVector"
             }
         ],
-        select=["content", "source", "page", "url"]
+        query_type="semantic",
+        semantic_configuration_name="default",
+        select=["content", "source", "page", "url"],
+        top=5
     ))
 
-    context_parts = []
+
+    def is_table_of_contents(content):
+        text = content.lower()
+
+        # direktno ako piše sadržaj
+        if "sadržaj" in text or "sadrzaj" in text:
+            return True
+
+        # mnogo tačkica kao u sadržaju
+        dots_count = content.count("....")
+        if dots_count >= 3:
+            return True
+
+        # više naziva sekcija + tačkice
+        toc_keywords = [
+            "pristup aplikaciji",
+            "početni ekran",
+            "radna površina",
+            "opis radne površine",
+            "dashboard"
+        ]
+
+        keyword_hits = sum(1 for word in toc_keywords if word in text)
+
+        if keyword_hits >= 2 and dots_count >= 1:
+            return True
+
+        return False
+
+    filtered_results = []
+
     for r in results:
+        content = r.get("content", "")
+
+        if is_table_of_contents(content):
+            print("IZBACUJEM SADRZAJ PAGE:", r.get("page"))
+            continue
+
+        filtered_results.append(r)
+
+    if not filtered_results:
+        return "Na osnovu trenutno dostupne dokumentacije, nemam informaciju o tome. Pokušajte da pitanje formulišete drugačije ili preciznije."
+
+    print("\n=== SEARCH RESULTS ===")
+
+    for r in results:
+        print("SCORE:", r.get("@search.score"))
+        print("PAGE:", r.get("page"))
+        print("SOURCE:", r.get("source"))
+        print("CONTENT:", r.get("content", "")[:700])
+        print("-" * 50)
+
+    print("======================\n")
+
+    context_parts = []
+    for r in filtered_results:
         context_parts.append(r["content"])
 
     context = "\n".join(context_parts)
 
     messages = [
-        {
-            "role": "system",
-            "content": """Ti si interni ITSM support chatbot koji pomaže korisnicima u radu sa tiketing sistemom.
+    {
+        "role": "system",
+        "content": """Ti si interni ITSM support chatbot koji pomaže korisnicima u radu sa ITSM tiketing sistemom.
 
-            Koristi isključivo informacije iz prosleđene dokumentacije kada odgovaraš na pitanja o ITSM alatu.
-            Ako odgovor ne postoji u dokumentaciji, nemoj izmišljati.
+        Koristi isključivo informacije iz prosleđene dokumentacije.
 
-            Istoriju razgovora koristi da razumeš na šta se trenutno pitanje odnosi.
-            Odgovaraj jasno, kratko i na srpskom jeziku.
+        PRAVILA:
+        - Ne koristi svoje opšte znanje
+        - Ne izmišljaj odgovore
+        - Odgovaraj jasno, kratko i na srpskom jeziku
+        - Ako korisnik pita "kako", "objasni" ili traži detalje, navedi konkretne korake iz dokumentacije
+        - Istoriju razgovora koristi samo za razumevanje konteksta pitanja
 
-            Ako pitanje nije vezano za ITSM alat, ljubazno reci da možeš da pomogneš samo oko ITSM alata."""
-        }
-    ]
+        VAŽNO:
+        - Ako odgovor NE postoji u dokumentaciji:
+        napiši TAČNO:
+        "Na osnovu trenutno dostupne dokumentacije, nemam informaciju o tome."
+        i NE prikazuj nikakve reference
+
+        - Ako dokumentacija nije relevantna za pitanje:
+        ignoriši je i odgovori da nema informacije
+
+        - Nikada nemoj prikazivati reference, linkove, stranice ili izvore u odgovoru
+        - Reference će sistem automatski dodati nakon odgovora
+
+        - Ako pitanje nije vezano za ITSM alat:
+        odgovori:
+        "Mogu da pomognem samo u vezi sa ITSM alatom."
+        """
+            }
+        ]
 
     for msg in history[-6:]:
         messages.append({
@@ -150,6 +236,7 @@ def ask_question(question, history=None):
         {standalone_question}
 
         Odgovori koristeći samo informacije koje su direktno relevantne za pitanje.
+        Ako dokumentacija sadrži korake, opcije ili polja koja treba popuniti, obavezno ih navedi.
         Ne uključuj informacije iz susednih sekcija ako nisu deo direktnog odgovora."""
     })
 
@@ -160,16 +247,47 @@ def ask_question(question, history=None):
     )
 
     answer = response.choices[0].message.content
+    answer = answer.replace("📎 Reference:", "")
 
-    refs_text = ""
-    if results:
-        best = results[0]
-        page = best.get("page", "?")
-        original_url = best.get("url", "")
+    best_score = filtered_results[0].get("@search.score", 0) if filtered_results else 0
+    if best_score < 0.025:
+        return answer
 
-        safe_url = generate_sas_url_from_existing_url(original_url, page)
+    if (
+        "Na osnovu trenutno dostupne dokumentacije, nemam informaciju o tome" in answer
+        or
+        "Mogu da pomognem samo u vezi sa ITSM alatom." in answer
+):
+        return answer
 
-        refs_text = "\n\n📎 Reference:\n"
-        refs_text += f"- {best.get('source', 'Nepoznat dokument')} (strana {page})\n  {safe_url}\n"
+    else:
+        refs_text = ""
+        if filtered_results:
+            refs_text = "\n\n📎 Reference:\n"
 
-    return answer + refs_text
+
+        seen_refs = set()
+        count = 0
+       
+        for r in filtered_results:
+            if count == 2:
+                break
+
+            source = r.get("source", "Nepoznat dokument")
+            page = r.get("page", "?")
+
+            key = (source, page)
+
+            if key in seen_refs:
+                continue
+
+            seen_refs.add(key)
+
+            original_url = r.get("url", "")
+            safe_url = generate_sas_url_from_existing_url(original_url, page)
+
+            refs_text += f"- {source} (strana {page})\n  {safe_url}\n"
+
+            count += 1
+
+        return answer + refs_text

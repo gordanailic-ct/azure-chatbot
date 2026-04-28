@@ -6,13 +6,10 @@ from datetime import datetime
 from http import HTTPStatus
 import requests
 import os
-
 import logging
 from opencensus.ext.azure.log_exporter import AzureLogHandler
-
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
-
 from config.config import DefaultConfig
 from services.extract_pdf_text import sync_new_documents
 
@@ -40,9 +37,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from bots.echo_bot import EchoBot
 from config.config import DefaultConfig
 
-CONFIG = DefaultConfig()
-
-# Create adapter.
+# Create bot adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
 ADAPTER = CloudAdapter(ConfigurationBotFrameworkAuthentication(CONFIG))
 
@@ -91,11 +86,6 @@ async def messages(req: Request) -> Response:
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post("/api/messages", messages)
 
-#async def messages_get(req: Request) -> Response:
-#    print("GET /api/messages pogodjen", flush=True)
-#   return Response(text="api/messages radi (GET test)", status=200)
-
-#APP.router.add_get("/api/messages", messages_get)
 
 async def widget(req: Request) -> Response:
     return web.FileResponse('./static/widget.js')
@@ -107,10 +97,6 @@ async def banner(req: Request) -> Response:
 
 APP.router.add_get("/banner.png", banner)
 
-# async def root(req: Request) -> Response:
-#     return Response(text="Bot is running!", status=200)
-
-# APP.router.add_get("/", root)
 
 async def get_token(req: Request) -> Response:
     secret = CONFIG.DIRECT_LINE_SECRET

@@ -14,7 +14,11 @@ class EchoBot(ActivityHandler):
     ):
         for member in members_added:
             if member.id != turn_context.activity.recipient.id:
-                await turn_context.send_activity("Dobrodosli!")
+                   await turn_context.send_activity(
+                    "Dobrodošli! 👋\n\n"
+                    "Ja sam ITSM asistent. Odgovaram na pitanja na osnovu dostupne dokumentacije i mogu da pomognem oko korišćenja sistema, funkcionalnosti aplikacije i korisničkih opcija.\n\n"
+                    "Kako mogu da pomognem?"
+                )
 
     async def _send_typing_loop(self, turn_context: TurnContext, stop_event: asyncio.Event):
         while not stop_event.is_set():
@@ -47,9 +51,11 @@ class EchoBot(ActivityHandler):
                 "content": question
             })
 
+            clean_answer = answer.split("📎 Reference:")[0].strip()
+
             history.append({
                 "role": "assistant",
-                "content": answer
+                "content": clean_answer
             })
 
             self.conversations[conversation_id] = history[-self.max_history:]

@@ -323,7 +323,9 @@
           if (data.success) {
             const processed = data.result.processed.length;
             const skipped = data.result.skipped.length;
-              if (processed === 0) {
+            const deleted = data.result.deleted ? data.result.deleted.length : 0;
+
+              if (processed === 0 && deleted === 0) {
                   showToast(
                     "Sync završen 👍\n" +
                     "Nema novih dokumenata za obradu\n" +
@@ -332,8 +334,9 @@
                 } else {
                   showToast(
                     "Sync uspešan ✔\n" +
-                    "Obrađeno: " + processed +
-                    " | Preskočeno: " + skipped
+                    "Dodato/izmenjeno: " + processed + "\n" +
+                    "Obrisano: " + deleted + "\n" +
+                    "Preskočeno: " + skipped
                   );
                 }
               } else {

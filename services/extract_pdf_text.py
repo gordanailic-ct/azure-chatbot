@@ -1,7 +1,4 @@
 from pypdf import PdfReader
-from openai import AzureOpenAI
-from azure.search.documents import SearchClient
-from azure.core.credentials import AzureKeyCredential
 from azure.storage.blob import BlobServiceClient
 from services.sync_state import load_index_state, save_index_state
 from config.config import DefaultConfig
@@ -23,7 +20,7 @@ def sanitize_key(text):
     return re.sub(r'[^a-zA-Z0-9_-]', '_', text)
 
 
-def chunk_text(text, chunk_size=1500, overlap=200):
+def chunk_text(text, chunk_size=3000, overlap=500):
     chunks = []
     start = 0
 
@@ -59,10 +56,12 @@ def process_blob_pdf(blob):
     total_chunks_for_file = 0
     safe_filename = sanitize_key(blob.name)
 
-    for page_num, page in enumerate(reader.pages, start=1):
-        page_text = page.extract_text()
+    for page_index, page in enumerate(reader.pages):
+        page_num = page_index + 1
 
-        if not page_text or not page_text.strip():
+        page_text = page.extract_text() or ""
+
+        if not page_text.strip():
             continue
 
         chunks = chunk_text(page_text)
@@ -81,7 +80,8 @@ def process_blob_pdf(blob):
                 "contentVector": vector,
                 "source": blob.name,
                 "page": page_num,
-                "url": file_url
+                "url": file_url,
+                "source_file": safe_filename
             }
 
             documents.append(doc)
@@ -99,6 +99,21 @@ def sync_new_documents():
 
     processed_files = []
     skipped_files = []
+    deleted_list = []
+
+    current_blobs = {
+        blob.name: blob.etag
+        for blob in container_client.list_blobs()
+        if blob.name.lower().endswith(".pdf")
+    }
+    deleted_files = set(state.keys()) - set(current_blobs.keys())
+
+    for deleted_file in deleted_files:
+        safe_filename = sanitize_key(deleted_file)
+        delete_document_chunks(search_client, safe_filename)
+        del state[deleted_file]
+        deleted_list.append(deleted_file)
+        print(f"{deleted_file} uklonjen iz indexa i state fajla")
 
     for blob in container_client.list_blobs():
         if not blob.name.lower().endswith(".pdf"):
@@ -112,6 +127,10 @@ def sync_new_documents():
             skipped_files.append(blob.name)
             continue
 
+        if saved:
+            safe_filename = sanitize_key(blob.name)
+            delete_document_chunks(search_client, safe_filename)
+            
         process_blob_pdf(blob)
 
         state[blob.name] = {
@@ -124,5 +143,25 @@ def sync_new_documents():
 
     return {
         "processed": processed_files,
-        "skipped": skipped_files
+        "skipped": skipped_files,
+        "deleted": deleted_list
     }
+
+def delete_document_chunks(search_client, safe_filename):
+    results = search_client.search(
+        search_text="*",
+        filter=f"source_file eq '{safe_filename}'",
+        select=["id"],
+        top=1000
+    )
+
+    docs_to_delete = [{"id": doc["id"]} for doc in results]
+
+    if docs_to_delete:
+        search_client.delete_documents(documents=docs_to_delete)
+        print(f"Obrisano {len(docs_to_delete)} chunkova za {safe_filename}")
+    else:
+        print(f"Nema chunkova za brisanje za {safe_filename}")
+
+if __name__ == "__main__":
+    sync_new_documents()
